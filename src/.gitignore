@@ -1,0 +1,2 @@
+# .env file to prevent sensitive data from being versioned
+.env

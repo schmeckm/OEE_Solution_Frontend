@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",  // Basisverzeichnis für relative Pfade
+        "paths": {
+            "@/*": ["src/*"]  // Alias für einfacheren Import
+        },
+        "target": "es2021",  // Ziel-JavaScript-Version
+        "module": "esnext",  // Modulstandard für moderne Browser
+        "lib": ["dom", "es2021"],  // Unterstützte Umgebungen (z. B. Browser)
+        "moduleResolution": "node",  // Auflösung für Node.js-Module
+        "allowSyntheticDefaultImports": true,  // Erlaubt Standardimporte
+        "strict": true  // Aktiviert strikte Typprüfung
+    },
+    "exclude": ["node_modules", "dist"],  // Ausschließen von Verzeichnissen
+    "include": ["src/**/*"]  // Einschließen aller Dateien im `src`-Verzeichnis
+}

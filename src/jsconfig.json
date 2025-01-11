@@ -1,0 +1,13 @@
+{
+    "compilerOptions": {
+        "target": "es2021", // Unterstützt modernes JavaScript
+        "module": "esnext", // Für ES-Module
+        "lib": ["dom", "es2021"], // Browser- und moderne JS-Features
+        "baseUrl": ".", // Basisverzeichnis für Aliasse
+        "paths": {
+            "@/*": ["src/*"] // Pfad-Alias für "src/"
+        }
+    },
+    "include": ["src/**/*"], // Scannt nur das "src"-Verzeichnis
+    "exclude": ["node_modules", "dist"] // Schließt Build- und Abhängigkeitsordner aus
+}

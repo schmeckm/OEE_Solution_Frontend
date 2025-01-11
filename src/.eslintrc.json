@@ -1,0 +1,20 @@
+{
+    "env": {
+        "browser": true,
+        "es2021": true
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:vue/vue3-recommended",
+        "plugin:prettier/recommended"
+    ],
+    "parserOptions": {
+        "ecmaVersion": 2021,
+        "sourceType": "module"
+    },
+    "rules": {
+        "prettier/prettier": "error", // Zeigt Prettier-Verstöße als ESLint-Fehler an
+        "no-console": "warn",        // Warnt bei console.log()
+        "no-unused-vars": "warn"    // Warnt bei ungenutzten Variablen
+    }
+}

@@ -1,0 +1,34 @@
+{
+    // Automatische Aktionen beim Speichern
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit",
+        "source.organizeImports": "explicit"
+    },
+
+    // Globaler Standard-Formatter
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+
+    // JavaScript-spezifische Einstellungen
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode", // Prettier als Standard
+        "editor.formatOnSave": true // Formatieren beim Speichern
+    },
+
+    // Vue-spezifische Einstellungen
+    "[vue]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
+
+    // TypeScript-spezifische Einstellungen
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    },
+
+    // JSON-spezifische Einstellungen
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.formatOnSave": true
+    }
+}

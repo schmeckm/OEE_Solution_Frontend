@@ -1,0 +1,50 @@
+{
+    "name": "freya-vue",
+    "version": "6.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
+        "format": "prettier --write \"**/*.{js,vue,d.ts}\""
+    },
+    "dependencies": {
+        "@primevue/themes": "^4.0.0",
+        "axios": "^1.7.7",
+        "axios-retry": "^4.5.0",
+        "chart.js": "^4.3.0",
+        "date-fns": "^4.1.0",
+        "dayjs": "^1.11.13",
+        "pinia": "^2.3.0",
+        "primeicons": "^6.0.1",
+        "primevue": "^4.2.2",
+        "quill": "^1.3.7",
+        "vue": "^3.4.29",
+        "vue-router": "^4.3.3"
+    },
+    "devDependencies": {
+        "@babel/core": "^7.26.0",
+        "@babel/eslint-parser": "^7.25.9",
+        "@babel/preset-env": "^7.26.0",
+        "@primevue/auto-import-resolver": "^4.0.1",
+        "@rushstack/eslint-patch": "^1.8.0",
+        "@typescript-eslint/eslint-plugin": "^8.19.1",
+        "@typescript-eslint/parser": "^8.19.1",
+        "@vitejs/plugin-vue": "^5.0.5",
+        "@vue/eslint-config-prettier": "^9.0.0",
+        "autoprefixer": "^10.4.20",
+        "eslint": "^8.57.1",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-prettier": "^5.2.1",
+        "eslint-plugin-vue": "^9.31.0",
+        "postcss": "^8.4.41",
+        "prettier": "^3.3.3",
+        "sass": "^1.62.1",
+        "tailwindcss": "^3.4.9",
+        "tailwindcss-primeui": "^0.3.2",
+        "typescript": "^5.6.3",
+        "unplugin-vue-components": "^0.27.3",
+        "vite": "^5.3.1"
+    }
+}
