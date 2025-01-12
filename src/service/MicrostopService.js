@@ -2,7 +2,7 @@ import { axiosInstance } from './utils/baseService';
 import { handleAxiosError } from './utils/errorHandler';
 
 // Debug Logging Utility
-const isDebug = 'true';
+const isDebug = process.env.NODE_ENV !== 'production'; // Debug nur in Entwicklungsumgebungen
 
 function debugLog(...args) {
     if (isDebug) {
@@ -13,101 +13,84 @@ function debugLog(...args) {
 const MicrostopService = {
     cache: {},
 
+    // API-Aufruf-Funktion mit generischer Methode
+    async apiCall(method, url, payload = null) {
+        try {
+            if (method === 'get') {
+                return (await axiosInstance.get(url, { params: payload })).data;
+            }
+            if (method === 'post') {
+                return (await axiosInstance.post(url, payload)).data;
+            }
+            if (method === 'put') {
+                return (await axiosInstance.put(url, payload)).data;
+            }
+            if (method === 'delete') {
+                return (await axiosInstance.delete(url)).data;
+            }
+        } catch (error) {
+            return handleAxiosError(error, `Fehler bei ${method.toUpperCase()} ${url}`);
+        }
+    },
+
     // Alle Microstops abrufen
     async fetchMicrostops() {
         debugLog('Abrufen der Microstops...');
-        try {
-            const response = await axiosInstance.get('/microstops');
-            debugLog('Microstops erfolgreich abgerufen:', response.data);
-            this.cache.allMicrostops = response.data;
-            return response.data;
-        } catch (error) {
-            return handleAxiosError(error, 'Fehler beim Abrufen der Microstops');
-        }
+        const data = await this.apiCall('get', '/microstops');
+        this.cache.allMicrostops = data; // Cache aktualisieren
+        return data;
     },
 
     // Microstops für eine bestimmte Order ID abrufen
     async fetchMicrostopsByOrderId(orderId) {
-        console.log('fetchMicrostopsByOrderId aufgerufen mit:', orderId);
+        debugLog(`Abrufen der Microstops für Order ID: ${orderId}`);
         if (this.cache[`order_${orderId}`]) {
-            debugLog(`Verwenden des gecachten Microstops für Order ID: ${orderId}`);
+            debugLog(`Verwenden des gecachten Ergebnisses für Order ID: ${orderId}`);
             return this.cache[`order_${orderId}`];
         }
-        try {
-            const response = await axiosInstance.get('/microstops', {
-                params: { order_id: orderId },
-            });
-            this.cache[`order_${orderId}`] = response.data;
-            debugLog(`Microstops für Order ID ${orderId} erfolgreich abgerufen:`, response.data);
-            return response.data;
-        } catch (error) {
-            return handleAxiosError(error, `Fehler beim Abrufen der Microstops für Order ID ${orderId}`);
-        }
+        const data = await this.apiCall('get', '/microstops', { order_id: orderId });
+        this.cache[`order_${orderId}`] = data; // Cache speichern
+        return data;
     },
 
     // Einen Microstop abrufen
     async getMicrostop(id) {
-        debugLog(`Abrufen des Microstops mit ID: ${id}`);
-        try {
-            const response = await axiosInstance.get(`/microstops/${id}`);
-            debugLog('Microstop erfolgreich abgerufen:', response.data);
-            return response.data;
-        } catch (error) {
-            return handleAxiosError(error, `Fehler beim Abrufen des Microstops mit ID ${id}`);
-        }
+        debugLog(`Abrufen eines Microstops mit ID: ${id}`);
+        return this.apiCall('get', `/microstops/${id}`);
     },
 
     // Einen neuen Microstop erstellen
     async createMicrostop(microstop) {
         debugLog('Erstellen eines neuen Microstops:', microstop);
-        try {
-            const response = await axiosInstance.post('/microstops', microstop);
-            debugLog('Microstop erfolgreich erstellt:', response.data);
-            return response.data;
-        } catch (error) {
-            return handleAxiosError(error, 'Fehler beim Erstellen des Microstops');
-        }
+        return this.apiCall('post', '/microstops', microstop);
     },
 
     // Einen bestehenden Microstop aktualisieren
     async updateMicrostop(id, microstop) {
-        debugLog(`Aktualisieren des Microstops mit ID: ${id}`, microstop);
-        try {
-            const response = await axiosInstance.put(`/microstops/${id}`, microstop);
-            debugLog(`Microstop mit ID ${id} erfolgreich aktualisiert:`, response.data);
-            return response.data;
-        } catch (error) {
-            return handleAxiosError(error, `Fehler beim Aktualisieren des Microstops mit ID ${id}`);
-        }
+        debugLog(`Aktualisieren eines Microstops mit ID: ${id}`, microstop);
+        return this.apiCall('put', `/microstops/${id}`, microstop);
     },
 
     // Einen Microstop löschen
     async deleteMicrostop(id) {
-        debugLog(`Löschen des Microstops mit ID: ${id}`);
-        try {
-            const response = await axiosInstance.delete(`/microstops/${id}`);
-            debugLog(`Microstop mit ID ${id} erfolgreich gelöscht.`);
-            return response.data;
-        } catch (error) {
-            return handleAxiosError(error, `Fehler beim Löschen des Microstops mit ID ${id}`);
-        }
+        debugLog(`Löschen eines Microstops mit ID: ${id}`);
+        return this.apiCall('delete', `/microstops/${id}`);
     },
 
     // Dauer für Microstops berechnen
     calculateDurations(microstops) {
+        debugLog('Berechnen der Dauer für Microstops...');
         return microstops.map((stop) => {
             const start = new Date(stop.start_date);
             const end = new Date(stop.end_date);
             const duration = (end - start) / 1000; // Dauer in Sekunden
-            return {
-                ...stop,
-                duration,
-            };
+            return { ...stop, duration };
         });
     },
 
     // Microstops nach Grund (reason) gruppieren
     groupByReason(microstops) {
+        debugLog('Gruppieren der Microstops nach Grund...');
         return microstops.reduce((acc, curr) => {
             if (!acc[curr.reason]) acc[curr.reason] = 0;
             acc[curr.reason] += curr.duration; // Dauer summieren
@@ -118,14 +101,22 @@ const MicrostopService = {
     // Kombinierte Methode: Microstops laden, filtern, Dauer berechnen und gruppieren
     async loadAndProcessMicrostops(orderId) {
         debugLog(`Laden und Verarbeiten der Microstops für Order ID: ${orderId}`);
-        try {
-            const data = await this.fetchMicrostopsByOrderId(orderId);
-            const withDurations = this.calculateDurations(data);
-            const grouped = this.groupByReason(withDurations);
-            return { microstops: withDurations, grouped };
-        } catch (error) {
-            return handleAxiosError(error, `Fehler beim Laden und Verarbeiten der Microstops für Order ID ${orderId}`);
-        }
+        const data = await this.fetchMicrostopsByOrderId(orderId);
+        const withDurations = this.calculateDurations(data);
+        const grouped = this.groupByReason(withDurations);
+        return { microstops: withDurations, grouped };
+    },
+
+    // Cache leeren
+    clearCache() {
+        debugLog('Leeren des gesamten Caches...');
+        this.cache = {};
+    },
+
+    // Cache für eine bestimmte Order ID leeren
+    clearCacheForOrder(orderId) {
+        debugLog(`Löschen des Caches für Order ID: ${orderId}`);
+        delete this.cache[`order_${orderId}`];
     },
 };
 

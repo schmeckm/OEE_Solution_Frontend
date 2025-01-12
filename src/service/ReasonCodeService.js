@@ -1,58 +1,55 @@
 import { axiosInstance } from './utils/baseService';
 import { handleAxiosError } from './utils/errorHandler';
 
+const isDebug = import.meta.env.VITE_DEBUG === 'true';
+
+const debugLog = (...args) => {
+    if (isDebug) console.log('[DEBUG]', ...args);
+};
+
+const apiCall = async (method, url, payload = null) => {
+    try {
+        if (method === 'get') return (await axiosInstance.get(url, { params: payload })).data;
+        if (method === 'post') return (await axiosInstance.post(url, payload)).data;
+        if (method === 'put') return (await axiosInstance.put(url, payload)).data;
+        if (method === 'delete') return (await axiosInstance.delete(url)).data;
+    } catch (error) {
+        return handleAxiosError(error, `Error during ${method.toUpperCase()} request to ${url}`);
+    }
+};
+
 const ReasonCodeService = {
-    // Fetch all reason codes
     async getReasonCodes() {
-        try {
-            const response = await axiosInstance.get('/ratings'); // API-Endpunkt für Reason Codes
-            console.log('[DEBUG] Reason codes fetched successfully:', response.data);
-            return response.data;
-        } catch (error) {
-            handleAxiosError(error, 'Error fetching reason codes');
-        }
+        debugLog('Fetching reason codes...');
+        return apiCall('get', '/ratings');
     },
 
-    // Create a new reason code
     async createReasonCode(reasonCode) {
         if (!reasonCode || typeof reasonCode !== 'object') {
             throw new Error('[ERROR] Invalid reason code data: Reason code must be an object.');
         }
-        try {
-            const response = await axiosInstance.post('/ratings', reasonCode);
-            console.log('[DEBUG] Reason code created successfully:', response.data);
-            return response.data;
-        } catch (error) {
-            handleAxiosError(error, 'Error creating reason code');
-        }
+        debugLog('Creating reason code:', reasonCode);
+        return apiCall('post', '/ratings', reasonCode);
     },
 
-    // Update an existing reason code
     async updateReasonCode(id, reasonCode) {
         if (!id || !reasonCode || typeof reasonCode !== 'object') {
             throw new Error('[ERROR] Invalid input: ID and reason code data are required.');
         }
-        try {
-            const response = await axiosInstance.put(`/ratings/${id}`, reasonCode);
-            console.log(`[DEBUG] Reason code with ID ${id} updated successfully:`, response.data);
-            return response.data;
-        } catch (error) {
-            handleAxiosError(error, `Error updating reason code with ID ${id}`);
-        }
+
+        // Entferne `id` aus dem Request-Body
+        const { id: _, ...payload } = reasonCode;
+
+        debugLog(`Updating reason code with ID: ${id}`, payload);
+        return apiCall('put', `/ratings/${id}`, payload);
     },
 
-    // Delete a reason code
     async deleteReasonCode(id) {
         if (!id) {
             throw new Error('[ERROR] Missing ID: ID is required for deleting a reason code.');
         }
-        try {
-            const response = await axiosInstance.delete(`/ratings/${id}`);
-            console.log(`[DEBUG] Reason code with ID ${id} deleted successfully.`);
-            return response.data;
-        } catch (error) {
-            handleAxiosError(error, `Error deleting reason code with ID ${id}`);
-        }
+        debugLog(`Deleting reason code with ID: ${id}`);
+        return apiCall('delete', `/ratings/${id}`);
     },
 };
 

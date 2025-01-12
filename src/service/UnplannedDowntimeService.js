@@ -4,82 +4,92 @@ import { handleAxiosError } from './utils/errorHandler';
 // Debug Logging Utility
 const isDebug = import.meta.env.VITE_DEBUG === 'true';
 
-// Unplanned Downtime Service
+const debugLog = (...args) => {
+    if (isDebug) console.log('[DEBUG]', ...args);
+};
+
+// Generische API-Aufruf-Funktion
+const apiCall = async (method, url, payload = null) => {
+    try {
+        if (method === 'get') return (await axiosInstance.get(url, { params: payload })).data;
+        if (method === 'post') return (await axiosInstance.post(url, payload)).data;
+        if (method === 'put') return (await axiosInstance.put(url, payload)).data;
+        if (method === 'delete') return (await axiosInstance.delete(url)).data;
+    } catch (error) {
+        return handleAxiosError(error, `Error during ${method.toUpperCase()} request to ${url}`);
+    }
+};
+
+// Service-Methoden
 const UnplannedDowntimeService = {
-    // Fetch all unplanned downtimes with machine details
-    getUnplannedDowntimesWithMachines: async function () {
-        if (isDebug) console.log('[DEBUG] Fetching unplanned downtimes with machine details...');
+    /**
+     * Fetch all unplanned downtimes and enrich them with machine details
+     * @returns {Promise<Array>} Enriched list of unplanned downtimes
+     */
+    async getUnplannedDowntimesWithMachines() {
+        debugLog('Fetching unplanned downtimes with machine details...');
         try {
-            const [downtimeResponse, machinesResponse] = await Promise.all([
-                axiosInstance.get('/unplanneddowntime'),
-                axiosInstance.get('/workcenters'),
+            // Paralleler Abruf von Downtimes und Maschinen
+            const [downtimes, machines] = await Promise.all([
+                apiCall('get', '/unplanneddowntime'),
+                apiCall('get', '/workcenters'),
             ]);
 
-            const downtimes = downtimeResponse.data;
-            const machines = machinesResponse.data;
-
-            // Optimize mapping with a Map for better performance
+            // Map für Maschinen-Zuordnung
             const machineMap = new Map(machines.map((machine) => [machine.workcenter_id, machine]));
 
+            // Enrich Downtimes mit Maschinen-Details
             const enrichedDowntimes = downtimes.map((downtime) => ({
                 ...downtime,
                 machineName: machineMap.get(downtime.workcenter_id)?.name || 'Unknown',
                 machineDetails: machineMap.get(downtime.workcenter_id) || null,
             }));
 
-            if (isDebug) console.log('[DEBUG] Enriched unplanned downtimes:', enrichedDowntimes);
+            debugLog('Enriched unplanned downtimes:', enrichedDowntimes);
             return enrichedDowntimes;
         } catch (error) {
-            handleAxiosError(error, 'Error fetching unplanned downtimes with machines');
+            return handleAxiosError(error, 'Error fetching unplanned downtimes with machines');
         }
     },
 
-    // Create a new unplanned downtime
-    createUnplannedDowntime: async function (downtime) {
-        if (isDebug) console.log('[DEBUG] Creating unplanned downtime:', downtime);
-        try {
-            const response = await axiosInstance.post('/unplanneddowntime', downtime);
-            if (isDebug) console.log('[DEBUG] Unplanned downtime created successfully:', response.data);
-            return response.data;
-        } catch (error) {
-            handleAxiosError(error, 'Error creating unplanned downtime');
-        }
+    /**
+     * Create a new unplanned downtime
+     * @param {Object} downtime - Downtime object
+     * @returns {Promise<Object>} Created downtime
+     */
+    async createUnplannedDowntime(downtime) {
+        debugLog('Creating unplanned downtime:', downtime);
+        return apiCall('post', '/unplanneddowntime', downtime);
     },
 
-    // Update an existing unplanned downtime
-    updateUnplannedDowntime: async function (id, downtime) {
-        if (isDebug) console.log(`[DEBUG] Updating unplanned downtime with ID: ${id}`, downtime);
-        try {
-            const response = await axiosInstance.put(`/unplanneddowntime/${id}`, downtime);
-            if (isDebug) console.log(`[DEBUG] Unplanned downtime with ID ${id} updated successfully:`, response.data);
-            return response.data;
-        } catch (error) {
-            handleAxiosError(error, `Error updating unplanned downtime with ID ${id}`);
-        }
+    /**
+     * Update an existing unplanned downtime
+     * @param {string} id - Downtime ID
+     * @param {Object} downtime - Updated downtime object
+     * @returns {Promise<Object>} Updated downtime
+     */
+    async updateUnplannedDowntime(id, downtime) {
+        debugLog(`Updating unplanned downtime with ID: ${id}`, downtime);
+        return apiCall('put', `/unplanneddowntime/${id}`, downtime);
     },
 
-    // Delete an unplanned downtime
-    deleteUnplannedDowntime: async function (id) {
-        if (isDebug) console.log(`[DEBUG] Deleting unplanned downtime with ID: ${id}`);
-        try {
-            const response = await axiosInstance.delete(`/unplanneddowntime/${id}`);
-            if (isDebug) console.log(`[DEBUG] Unplanned downtime with ID ${id} deleted successfully.`);
-            return response.data;
-        } catch (error) {
-            handleAxiosError(error, `Error deleting unplanned downtime with ID ${id}`);
-        }
+    /**
+     * Delete an unplanned downtime by ID
+     * @param {string} id - Downtime ID
+     * @returns {Promise<Object>} Deletion result
+     */
+    async deleteUnplannedDowntime(id) {
+        debugLog(`Deleting unplanned downtime with ID: ${id}`);
+        return apiCall('delete', `/unplanneddowntime/${id}`);
     },
 
-    // Fetch all machines
-    getMachines: async function () {
-        if (isDebug) console.log('[DEBUG] Fetching machines...');
-        try {
-            const response = await axiosInstance.get('/workcenters');
-            if (isDebug) console.log('[DEBUG] Machines fetched successfully:', response.data);
-            return response.data;
-        } catch (error) {
-            handleAxiosError(error, 'Error fetching machines');
-        }
+    /**
+     * Fetch all machines
+     * @returns {Promise<Array>} List of machines
+     */
+    async getMachines() {
+        debugLog('Fetching machines...');
+        return apiCall('get', '/workcenters');
     },
 };
 

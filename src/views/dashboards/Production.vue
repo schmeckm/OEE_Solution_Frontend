@@ -113,6 +113,18 @@ const handleWebSocketMessage = async (message: OEEDataMessage) => {
     }
 };
 
+watch(
+    [getPrimary, getSurface, isDarkTheme], // Beobachte Farb- und Theme-Änderungen
+    () => {
+        console.log('Farben oder Theme geändert. Aktualisiere Diagramme...');
+        updateCharts();
+        updateParetoChart();
+        if (selectedMachine.value) {
+            loadPrepareOEEData(selectedMachine.value.workcenter_id);
+        }
+    }
+);
+
 // Watcher für ausgewählte Maschine
 watch(selectedMachine, async (newMachine: Machine | null) => {
     if (newMachine) {
@@ -661,10 +673,6 @@ const closeDialog = () => {
     microstopDialog.value = false;
 };
 
-const closeDeleteDialog = () => {
-    deleteMicrostopsDialog.value = false;
-};
-
 const openNew = async () => {
     microstop.value = {
         microstop_ID: null,
@@ -674,10 +682,6 @@ const openNew = async () => {
     };
     await loadReasonCodes(); // Lade Reason Codes beim Öffnen des Dialogs
     microstopDialog.value = true;
-};
-
-const confirmDeleteSelected = () => {
-    deleteMicrostopsDialog.value = true;
 };
 </script>
 <template>
@@ -799,14 +803,12 @@ const confirmDeleteSelected = () => {
             <Column field="differenz" header="Duration" sortable filter filterPlaceholder="Search by Duration"></Column>
             <Column :exportable="false">
                 <template #body="slotProps">
-                    <Button
-                        icon="pi pi-pencil"
-                        class="p-button-rounded p-button-success mr-2"
-                        @click="editMicrostop(slotProps.data)"
-                    />
+                    <Button icon="pi pi-pencil" outlined rounded class="mr-2" @click="editMicrostop(slotProps.data)" />
                     <Button
                         icon="pi pi-trash"
-                        class="p-button-rounded p-button-warning"
+                        outlined
+                        rounded
+                        severity="danger"
                         @click="confirmDeleteMicrostop(slotProps.data)"
                     />
                 </template>

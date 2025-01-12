@@ -4,89 +4,112 @@ import { handleAxiosError } from './utils/errorHandler';
 // Debug Logging Utility
 const isDebug = import.meta.env.VITE_DEBUG === 'true';
 
+const debugLog = (...args) => {
+    if (isDebug) console.log('[DEBUG]', ...args);
+};
+
 // Caching mechanism for machine data
 let machinesCache = null;
 let cacheTimestamp = null;
 const CACHE_DURATION = 5 * 60 * 1000; // Cache für 5 Minuten
 
 // Utility to get machines with caching
-async function getMachinesWithCache() {
+const getMachinesWithCache = async () => {
     const now = Date.now();
     if (machinesCache && cacheTimestamp && now - cacheTimestamp < CACHE_DURATION) {
+        debugLog('Using cached machines data...');
         return machinesCache;
     }
 
+    debugLog('Fetching machines data from API...');
     try {
         const response = await axiosInstance.get('/workcenters');
         machinesCache = response.data;
         cacheTimestamp = now;
         return machinesCache;
     } catch (error) {
-        await handleAxiosError(error, 'Error fetching machines');
+        return handleAxiosError(error, 'Error fetching machines');
     }
-}
+};
 
-// Process Order Service
+// Generische API-Aufruf-Funktion
+const apiCall = async (method, url, payload = null) => {
+    try {
+        if (method === 'get') return (await axiosInstance.get(url, { params: payload })).data;
+        if (method === 'post') return (await axiosInstance.post(url, payload)).data;
+        if (method === 'put') return (await axiosInstance.put(url, payload)).data;
+        if (method === 'delete') return (await axiosInstance.delete(url)).data;
+    } catch (error) {
+        return handleAxiosError(error, `Error during ${method.toUpperCase()} request to ${url}`);
+    }
+};
+
+// Service-Methoden
 const ProcessOrderService = {
-    // Fetch all process orders and enrich with machine data
+    /**
+     * Fetch all process orders and enrich with machine data
+     * @returns {Promise<Array>} Enriched list of process orders
+     */
     async getProcessOrders() {
+        debugLog('Fetching process orders...');
         try {
-            const ordersResponse = await axiosInstance.get('/processorders');
+            const orders = await apiCall('get', '/processorders');
             const machines = await getMachinesWithCache();
-            console.log('Fetched machines:', machines);
+
             // Map machine IDs to names for quick lookup
             const machineMap = new Map(
                 machines.map((machine) => [machine.workcenter_id.trim().toLowerCase(), machine.name])
             );
 
-            const enrichedOrders = ordersResponse.data.map((order) => ({
+            const enrichedOrders = orders.map((order) => ({
                 ...order,
                 machineName: machineMap.get(order.workcenter_id.trim().toLowerCase()) || 'Unknown',
             }));
 
-            console.log('Fetched process orders:', enrichedOrders);
+            debugLog('Enriched process orders:', enrichedOrders);
             return enrichedOrders;
         } catch (error) {
-            await handleAxiosError(error, 'Error fetching process orders');
+            return handleAxiosError(error, 'Error fetching process orders');
         }
     },
 
-    // Fetch all machines
+    /**
+     * Fetch all machines
+     * @returns {Promise<Array>} List of machines
+     */
     async getMachines() {
-        return await getMachinesWithCache();
+        return getMachinesWithCache();
     },
 
-    // Create a new process order
+    /**
+     * Create a new process order
+     * @param {Object} order - Process order data
+     * @returns {Promise<Object>} Created process order
+     */
     async createProcessOrder(order) {
-        try {
-            const response = await axiosInstance.post('/processorders', order);
-            console.log('Created process order:', response.data);
-            return response.data;
-        } catch (error) {
-            await handleAxiosError(error, 'Error creating process order');
-        }
+        debugLog('Creating process order:', order);
+        return apiCall('post', '/processorders', order);
     },
 
-    // Update an existing process order
+    /**
+     * Update an existing process order
+     * @param {string} orderId - Process order ID
+     * @param {Object} order - Updated process order data
+     * @returns {Promise<Object>} Updated process order
+     */
     async updateProcessOrder(orderId, order) {
-        try {
-            const response = await axiosInstance.put(`/processorders/${orderId}`, order);
-            console.log('Updated process order:', response.data);
-            return response.data;
-        } catch (error) {
-            await handleAxiosError(error, `Error updating process order with ID ${orderId}`);
-        }
+        debugLog(`Updating process order with ID: ${orderId}`, order);
+        return apiCall('put', `/processorders/${orderId}`, order);
     },
 
-    // Delete a process order
+    /**
+     * Delete a process order
+     * @param {string} orderId - Process order ID
+     * @returns {Promise<Object>} Deletion result
+     */
     async deleteProcessOrder(orderId) {
-        try {
-            const response = await axiosInstance.delete(`/processorders/${orderId}`);
-            console.log('Deleted process order:', response.data);
-            return response.data;
-        } catch (error) {
-            await handleAxiosError(error, `Error deleting process order with ID ${orderId}`);
-        }
+        debugLog(`Deleting process order with ID: ${orderId}`);
+        return apiCall('delete', `/processorders/${orderId}`);
     },
 };
 
