@@ -103,6 +103,22 @@ const model = ref([
         ],
     },
     {
+        label: 'IT-OT Status',
+        icon: 'pi pi-fw pi-user',
+        items: [
+            {
+                label: 'WorkCenter Status',
+                icon: 'pi pi-fw pi-list',
+                to: '/IT-OT/workcenter-status',
+            },
+            {
+                label: 'MQTT Status',
+                icon: 'pi pi-fw pi-lock',
+                to: '/IT-OT/mqtt-status',
+            },
+        ],
+    },
+    {
         label: 'User Management',
         icon: 'pi pi-fw pi-user',
         items: [

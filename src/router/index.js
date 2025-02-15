@@ -159,6 +159,23 @@ const routes = [
                 },
                 component: () => import('@/views/user-management/UserCreate.vue'),
             },
+            // IT-OT Status Section
+            {
+                path: '/it-ot/workcenter-status',
+                name: 'workcenter-status',
+                meta: {
+                    breadcrumb: ['IT-OT Status', 'WorkCenter Status'],
+                },
+                component: () => import('@/views/pages/WorkcenterTable.vue'),
+            },
+            {
+                path: '/it-ot/mqtt-status',
+                name: 'mqtt-status',
+                meta: {
+                    breadcrumb: ['IT-OT Status', 'MQTT Status'],
+                },
+                component: () => import('@/views/pages/WorkcenterTable.vue'),
+            },
 
             // Additional Pages
             {
