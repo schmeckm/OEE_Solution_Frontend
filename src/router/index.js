@@ -37,9 +37,9 @@ const routes = [
                 path: '/oee/manage-reason-reporting',
                 name: 'reason-reporting',
                 meta: {
-                    breadcrumb: ['OEE', 'Reason Reporting'],
+                    breadcrumb: ['OEE', 'Microstop Reporting'],
                 },
-                component: () => import('@/views/dashboards/production.vue'),
+                component: () => import('@/views/dashboards/MicroStops.vue'),
             },
             {
                 path: '/oee/manage-line-status',

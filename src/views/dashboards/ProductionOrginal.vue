@@ -1,154 +1,170 @@
-<script setup>
-import { ref, watch } from 'vue';
-import axios from 'axios'; // Für API-Aufrufe
+<script setup lang="ts">
+import { ref, watch, onMounted } from 'vue';
+import { Chart } from 'primevue/chart';
 import { useLayout } from '@/layout/composables/layout';
-import { FilterMatchMode } from '@primevue/core/api';
+import { useToast } from 'primevue/usetoast';
+import MicrostopService from '@/service/MicrostopService';
+import moment from 'moment-timezone';
 
+// Reaktive Zustände
+const allMicrostops = ref([]);
+const filteredMicrostops = ref([]);
+const startDate = ref('');
+const endDate = ref('');
+const selectedOrders = ref([]);
+const orderOptions = ref([]);
+const chartData = ref({
+    labels: [],
+    datasets: [
+        {
+            data: [],
+            backgroundColor: [],
+            hoverBackgroundColor: [],
+        },
+    ],
+});
+const chartOptions = ref({});
+
+// Toast- und Layout-Funktionen
+const toast = useToast();
 const { getPrimary, getSurface, isDarkTheme } = useLayout();
 
-const chartData = ref(null);
-const chartOptions = ref(null);
-const chart1 = ref(null);
-const chartOptions1 = ref(null);
-const pieData = ref(null);
-const pieOptions = ref(null);
-const menu = ref(null);
-const menu2 = ref(null);
-const expandedRows = ref([]);
+// Utility: Konfigurationswerte
+const DATE_FORMAT = import.meta.env.VITE_DATE_FORMAT || 'YYYY-MM-DD HH:mm:ss';
+const TIMEZONE = import.meta.env.VITE_TIMEZONE || moment.tz.guess();
 
-const filterSalesTable = ref({
-    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
-});
-
-// Linienauswahl
-const lineOptions = ref([
-    { label: 'Linie A', value: 'lineA' },
-    { label: 'Linie B', value: 'lineB' },
-    { label: 'Linie C', value: 'lineC' }
-]);
-
-const selectedLine = ref(null); // Die ausgewählte Linie
-const lineData = ref(null); // Daten, die aus der API zurückkommen
-
-const orders = ref({
-    monthlyData: {
-        dateRange: 'last 12 month',
-        orders: [122, 584, 646, 221, 135, 453, 111, 158, 425, 156, 454, 456],
-        orderUnits: [145, 584, 676, 281, 137, 459, 136, 178, 435, 176, 456, 480],
-        avarageUnitByOrder: 1.2,
-        avarageSalesByOrder: '$28.00',
-        totalSales: '$109,788.00'
-    }
-});
-
-// API-Aufruf auslösen, wenn sich die Auswahl ändert
-watch(selectedLine, async (newLine) => {
-    if (newLine) {
-        try {
-            console.log(`Fetching data for ${newLine}`);
-            const response = await axios.get(`/api/line/${newLine}`); // Beispiel-API-Endpunkt
-            lineData.value = response.data;
-            console.log('Daten erfolgreich abgerufen:', lineData.value);
-        } catch (error) {
-            console.error('Fehler beim Abrufen der Linien-Daten:', error);
-        }
-    }
-});
-
-const initChart = () => {
+// Farben initialisieren
+function initChart() {
     const documentStyle = getComputedStyle(document.documentElement);
-    const textColor = documentStyle.getPropertyValue('--text-color');
-    const textColorSecondary = documentStyle.getPropertyValue('--text-color-secondary');
-    const surfaceBorder = documentStyle.getPropertyValue('--surface-border');
+    const primaryColors = [
+        documentStyle.getPropertyValue('--p-primary-300').trim(),
+        documentStyle.getPropertyValue('--p-primary-400').trim(),
+        documentStyle.getPropertyValue('--p-primary-500').trim(),
+        documentStyle.getPropertyValue('--p-primary-600').trim(),
+        documentStyle.getPropertyValue('--p-primary-700').trim(),
+    ];
 
-    chartData.value = {
-        labels: ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'],
-        datasets: [
-            {
-                label: 'Orders',
-                data: orders.value.monthlyData.orders,
-                fill: false,
-                backgroundColor: documentStyle.getPropertyValue('--p-primary-300'),
-                borderRadius: 6
-            }
-        ]
-    };
+    chartData.value.datasets[0].backgroundColor = primaryColors;
+    chartData.value.datasets[0].hoverBackgroundColor = primaryColors;
+
     chartOptions.value = {
-        animation: {
-            duration: 0
-        },
+        responsive: true,
         maintainAspectRatio: false,
         plugins: {
             legend: {
-                labels: {
-                    color: textColor,
-                    usePointStyle: true,
-                    boxHeight: 15,
-                    pointStyleWidth: 17,
-                    padding: 14
-                }
-            }
-        },
-        scales: {
-            x: {
-                stacked: true,
-                ticks: {
-                    color: textColorSecondary
-                },
-                grid: {
-                    color: surfaceBorder
-                }
+                position: 'top',
+                labels: { color: documentStyle.getPropertyValue('--text-color').trim() },
             },
-            y: {
-                ticks: {
-                    color: textColorSecondary
-                },
-                grid: {
-                    color: surfaceBorder
-                }
-            }
-        }
+        },
     };
-};
+}
 
-watch(
-    [getPrimary, getSurface, isDarkTheme],
-    () => {
-        initChart();
-    },
-    { immediate: true }
-);
+// Daten laden
+async function loadAllMicrostops() {
+    try {
+        const data = await MicrostopService.fetchMicrostops();
+        if (!data.length) {
+            toast.add({ severity: 'warn', summary: 'No Data', detail: 'No microstops found.', life: 3000 });
+            return;
+        }
+
+        allMicrostops.value = data;
+
+        const uniqueOrders = [...new Set(data.map((item) => item.order_id))];
+        orderOptions.value = uniqueOrders.map((orderId) => ({ name: orderId, value: orderId }));
+
+        filterData();
+    } catch (error) {
+        console.error('Error loading microstops:', error);
+        toast.add({ severity: 'error', summary: 'Error', detail: 'Failed to load microstops.', life: 3000 });
+    }
+}
+
+// Daten filtern
+function filterData() {
+    let filtered = [...allMicrostops.value];
+
+    if (startDate.value && endDate.value) {
+        const start = moment.tz(startDate.value, TIMEZONE).startOf('day').toDate();
+        const end = moment.tz(endDate.value, TIMEZONE).endOf('day').toDate();
+
+        filtered = filtered.filter((item) => {
+            const itemDate = new Date(item.start_date);
+            return itemDate >= start && itemDate <= end;
+        });
+    }
+
+    if (selectedOrders.value.length) {
+        filtered = filtered.filter((item) => selectedOrders.value.includes(item.order_id));
+    }
+
+    filteredMicrostops.value = filtered;
+    updateChartData(filtered);
+}
+
+// Chart-Daten aktualisieren
+function updateChartData(data) {
+    const reasons = data.reduce((acc, cur) => {
+        acc[cur.reason] = (acc[cur.reason] || 0) + cur.differenz;
+        return acc;
+    }, {});
+
+    chartData.value.labels = Object.keys(reasons);
+    chartData.value.datasets[0].data = Object.values(reasons);
+}
+
+// Initialisierung
+onMounted(() => {
+    loadAllMicrostops();
+});
+
+// Theme- oder Farbänderungen beobachten
+watch([getPrimary, getSurface, isDarkTheme], initChart, { immediate: true });
 </script>
-
 <template>
-    <div class="grid grid-cols-12">
-        <!-- Linienauswahl -->
-        <div class="col-span-12 p-4">
+    <div class="grid grid-cols-12 gap-4">
+        <!-- Filter Panel -->
+        <div class="col-span-12 md:col-span-4 flex flex-col gap-4 p-4">
             <div class="card">
-                <div class="flex items-center">
-                    <label for="lineSelector" class="mr-4 font-semibold">Linienauswahl:</label>
-                    <Select id="lineSelector" :options="lineOptions" v-model="selectedLine" placeholder="Linie auswählen" optionLabel="label" class="w-48"></Select>
-                </div>
+                <h4 class="text-primary">Filters</h4>
+                <DatePicker id="start-date" v-model="startDate" placeholder="Start Date" />
+                <DatePicker id="end-date" v-model="endDate" placeholder="End Date" />
+                <MultiSelect
+                    v-model="selectedOrders"
+                    :options="orderOptions"
+                    optionLabel="name"
+                    placeholder="Select Orders"
+                    :maxSelectedLabels="3"
+                    class="w-full"
+                    filter
+                />
+                <Button label="Apply Filters" class="mt-4" @click="filterData" />
             </div>
         </div>
 
-        <!-- Anzeige der Linien-Daten -->
-        <div class="col-span-12 xl:col-span-8 p-4">
-            <div v-if="lineData" class="card">
-                <h3 class="text-xl font-semibold">Daten der Linie: {{ selectedLine }}</h3>
-                <pre>{{ lineData }}</pre>
-            </div>
-            <div v-else class="card">
-                <p>Wählen Sie eine Linie aus, um die Daten zu laden.</p>
-            </div>
-        </div>
-
-        <!-- Beispiel-Chart -->
-        <div class="col-span-12 xl:col-span-4 p-4">
-            <div class="card">
-                <h3 class="text-xl font-semibold">Chart</h3>
-                <Chart type="bar" :data="chartData" :options="chartOptions"></Chart>
+        <!-- Chart Panel -->
+        <div class="col-span-12 md:col-span-8 p-4">
+            <div class="card h-full">
+                <h4 class="text-primary">Microstop Distribution</h4>
+                <Chart type="doughnut" :data="chartData" :options="chartOptions" class="w-full md:w-[30rem]" />
             </div>
         </div>
     </div>
 </template>
+<style scoped>
+.grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 20px;
+}
+.card {
+    background-color: var(--surface-0);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: var(--shadow-2);
+}
+.text-primary {
+    color: var(--primary-color);
+}
+</style>

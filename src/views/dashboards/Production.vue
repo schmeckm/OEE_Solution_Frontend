@@ -8,6 +8,16 @@ import { useToast } from 'primevue/usetoast';
 
 const toast = useToast();
 
+// Definiere showSuccess, um Erfolgsmeldungen anzuzeigen
+const showSuccess = (message: string) => {
+    toast.add({
+        severity: 'success',
+        summary: 'Erfolg',
+        detail: message,
+        life: 3000,
+    });
+};
+
 // Interfaces definieren
 interface Machine {
     name: string;

@@ -266,8 +266,8 @@ function closeDeleteDialog() {
                         label="Delete"
                         icon="pi pi-trash"
                         severity="secondary"
-                        @click="confirmDeleteSelected"
                         :disabled="!selectedProcessOrders.length"
+                        @click="confirmDeleteSelected"
                     />
                 </template>
                 <template #end>
