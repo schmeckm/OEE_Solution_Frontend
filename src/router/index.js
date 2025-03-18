@@ -31,7 +31,7 @@ const routes = [
                 meta: {
                     breadcrumb: ['OEE', 'Plant OEE'],
                 },
-                component: () => import('@/views/dashboards/production.vue'),
+                component: () => import('@/components/OEEDashboard.vue'),
             },
             {
                 path: '/oee/manage-reason-reporting',

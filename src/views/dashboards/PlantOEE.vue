@@ -568,6 +568,11 @@ const updateParetoChart = () => {
     };
 };
 
+// -- Session Storage
+const saveSelectedMachineToSession = (machine: Machine) => {
+    sessionStorage.setItem('selectedMachine', JSON.stringify(machine));
+};
+
 const loadSelectedMachineFromSession = (): Machine | null => {
     const stored = sessionStorage.getItem('selectedMachine');
     return stored ? JSON.parse(stored) : null;

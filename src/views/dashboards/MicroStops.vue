@@ -30,6 +30,7 @@ interface Microstop {
 }
 
 const { getPrimary, getSurface, isDarkTheme } = useLayout();
+
 const toast = useToast();
 const dateFormat = import.meta.env.VITE_DATE_FORMAT || 'yyyy-MM-dd HH:mm:ss';
 
