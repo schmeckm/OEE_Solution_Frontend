@@ -23,7 +23,7 @@ const routes = [
                 meta: {
                     breadcrumb: ['OEE', 'Line OEE'],
                 },
-                component: () => import('@/views/dashboards/production.vue'),
+                component: () => import('@/views/dashboards/LineOEE.vue'),
             },
             {
                 path: '/oee/manage-plant-oee',
@@ -31,7 +31,7 @@ const routes = [
                 meta: {
                     breadcrumb: ['OEE', 'Plant OEE'],
                 },
-                component: () => import('@/components/OEEDashboard.vue'),
+                component: () => import('@/views/dashboards/PlantOEE.vue'),
             },
             {
                 path: '/oee/manage-reason-reporting',

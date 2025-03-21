@@ -30,7 +30,6 @@ interface Microstop {
 }
 
 const { getPrimary, getSurface, isDarkTheme } = useLayout();
-
 const toast = useToast();
 const dateFormat = import.meta.env.VITE_DATE_FORMAT || 'yyyy-MM-dd HH:mm:ss';
 
@@ -68,6 +67,37 @@ const currentMicrostop = ref({
     differenz: 0,
     order_id: 0,
 });
+
+async function exportCSV() {
+    try {
+        // Dynamischer Import von papaparse
+        const Papa = await import('papaparse');
+
+        // Daten in CSV umwandeln
+        const csv = Papa.unparse(filteredMicrostops.value, {
+            header: true, // Fügt eine Kopfzeile hinzu
+            delimiter: ',', // Trennzeichen (kann auch ein Semikolon sein)
+        });
+
+        // CSV-Datei erstellen und herunterladen
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'microstops.csv'; // Dateiname
+        link.click();
+
+        // Erfolgsmeldung anzeigen
+        showSuccess('CSV erfolgreich exportiert.');
+    } catch (error) {
+        console.error('Fehler beim Exportieren der CSV:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Fehler',
+            detail: 'CSV-Export fehlgeschlagen',
+            life: 3000,
+        });
+    }
+}
 
 // Reason-Optionen, die per API geladen werden
 

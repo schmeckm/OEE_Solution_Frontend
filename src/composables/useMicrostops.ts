@@ -1,85 +1,63 @@
 import { ref } from 'vue';
 import MicrostopService from '@/service/MicrostopService';
 
-// Hier kannst du auch deine `Microstop`-Interface importieren, falls benötigt.
-
-export function useMicrostops() {
-    // --- State ---
+export function useMicrostops(orderId) {
     const microstops = ref([]);
     const filteredMicrostops = ref([]);
-    const groupedMicrostops = ref<Record<string, number>>({});
-    const selectedMicrostops = ref([]);
+    const groupedMicrostops = ref({});
     const microstopDialog = ref(false);
-    const deleteMicrostopsDialog = ref(false);
 
-    // Das einzelne "microstop" zum Bearbeiten
-    const microstop = ref({
-        microstop_ID: null,
-        reason: '',
-        start_date: null,
-        end_date: null,
-    });
-
-    // --- Methoden ---
-    const loadMicrostops = async (orderIdParam: number | null) => {
-        if (!orderIdParam) {
+    const loadMicrostops = async (orderIdValue) => {
+        if (!orderIdValue) {
             microstops.value = [];
             filteredMicrostops.value = [];
             groupedMicrostops.value = {};
             return;
         }
+
         try {
-            const { microstops: processed } = await MicrostopService.loadAndProcessMicrostops(orderIdParam);
-            microstops.value = processed || [];
+            const response = await MicrostopService.fetchMicrostops(orderIdValue);
+            microstops.value = response || [];
             filterMicrostops();
-        } catch (err: any) {
-            console.error('Failed to load microstops:', err.message);
-            microstops.value = [];
-            filteredMicrostops.value = [];
-            groupedMicrostops.value = {};
+        } catch (error) {
+            console.error('Fehler beim Laden der Microstops:', error);
         }
     };
 
-    const filterMicrostops = () => {
-        // Dein Filter- und Gruppen-Logik aus PlantOEE.vue
-        // ...
-    };
-
-    const saveMicrostop = async (showSuccess: (msg: string) => void) => {
+    const saveMicrostop = async (microstop) => {
         try {
-            if (microstop.value.microstop_ID) {
+            if (microstop.microstop_ID) {
                 // Update
-                await MicrostopService.updateMicrostop(microstop.value.microstop_ID, microstop.value);
-                showSuccess('Microstop erfolgreich aktualisiert.');
+                await MicrostopService.updateMicrostop(microstop.microstop_ID, microstop);
                 microstops.value = microstops.value.map((stop) =>
-                    stop.microstop_ID === microstop.value.microstop_ID ? { ...microstop.value } : stop
+                    stop.microstop_ID === microstop.microstop_ID ? { ...microstop } : stop
                 );
             } else {
                 // Create
-                const newMicrostop = await MicrostopService.createMicrostop(microstop.value);
-                showSuccess('Microstop erfolgreich erstellt.');
+                const newMicrostop = await MicrostopService.createMicrostop(microstop);
                 microstops.value.push(newMicrostop);
             }
             filterMicrostops();
             microstopDialog.value = false;
         } catch (err) {
-            console.error('Error saving microstop:', err);
+            console.error('Fehler beim Speichern des Microstops:', err);
         }
     };
 
-    // Und so weiter: deleteMicrostop, editMicrostop, etc.
+    const filterMicrostops = () => {
+        filteredMicrostops.value = microstops.value.filter((m) => m.order_id === orderId.value);
+        groupedMicrostops.value = filteredMicrostops.value.reduce((acc, m) => {
+            acc[m.reason] = (acc[m.reason] || 0) + (m.differenz || m.duration || 0);
+            return acc;
+        }, {});
+    };
 
     return {
         microstops,
         filteredMicrostops,
         groupedMicrostops,
-        selectedMicrostops,
-        microstop,
         microstopDialog,
-        deleteMicrostopsDialog,
         loadMicrostops,
-        filterMicrostops,
         saveMicrostop,
-        // ... etc
     };
 }
